@@ -1,6 +1,7 @@
 import re
-from unittest.mock import patch
+from unittest.mock import patch, Mock
 
+import typer
 from minisweagent.models.test_models import DeterministicModel, make_output
 from minisweagent.run.mini import DEFAULT_CONFIG_FILE, main
 from tests.conftest import assert_observations_match
@@ -36,7 +37,10 @@ def test_local_end_to_end(local_test_data):
         patch("builtins.input", return_value=""),  # For LimitsExceeded handling
     ):
         mock_model_class.return_value = _make_model_from_fixture(model_responses)
+        mock_ctx = Mock(spec=typer.Context)
+        mock_ctx.invoked_subcommand = None
         agent = main(
+            ctx=mock_ctx,
             model_name="tardis",
             config_spec=[str(DEFAULT_CONFIG_FILE)],
             yolo=True,
