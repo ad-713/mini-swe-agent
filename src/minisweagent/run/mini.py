@@ -51,8 +51,9 @@ app = typer.Typer(rich_markup_mode="rich")
 
 
 # fmt: off
-@app.command(help=_HELP_TEXT)
+@app.callback(invoke_without_command=True, help=_HELP_TEXT)
 def main(
+    ctx: typer.Context,
     model_name: str | None = typer.Option(None, "-m", "--model", help="Model to use",),
     model_class: str | None = typer.Option(None, "--model-class", help="Model class to use (e.g., 'litellm' or 'minisweagent.models.litellm_model.LitellmModel')", rich_help_panel="Advanced"),
     agent_class: str | None = typer.Option(None, "--agent-class", help="Agent class to use (e.g., 'interactive' or 'minisweagent.agents.interactive.InteractiveAgent')", rich_help_panel="Advanced"),
@@ -65,6 +66,8 @@ def main(
     exit_immediately: bool = typer.Option(False, "--exit-immediately", help="Exit immediately when the agent wants to finish instead of prompting.", rich_help_panel="Advanced"),
 ) -> Any:
     # fmt: on
+    if ctx.invoked_subcommand is not None:
+        return
     configure_if_first_time()
 
     # Build the config from the command line arguments

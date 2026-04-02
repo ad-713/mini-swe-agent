@@ -5,6 +5,7 @@ from pathlib import Path
 from unittest.mock import Mock, patch
 
 import pytest
+import typer
 
 from minisweagent.run.mini import DEFAULT_CONFIG_FILE, app, main
 
@@ -36,8 +37,13 @@ def test_configure_if_first_time_called():
         mock_agent.run.return_value = {"exit_status": "Success", "submission": "Result"}
         mock_get_agent.return_value = mock_agent
 
+        # Setup mock context
+        mock_ctx = Mock(spec=typer.Context)
+        mock_ctx.invoked_subcommand = None
+
         # Call main function
         main(
+            mock_ctx,
             config_spec=[str(DEFAULT_CONFIG_FILE)],
             model_name="test-model",
             task="Test task",
@@ -73,8 +79,13 @@ def test_mini_command_calls_run_interactive():
         mock_agent.run.return_value = {"exit_status": "Success", "submission": "Result"}
         mock_get_agent.return_value = mock_agent
 
+        # Setup mock context
+        mock_ctx = Mock(spec=typer.Context)
+        mock_ctx.invoked_subcommand = None
+
         # Call main function with task provided (so prompt is not called)
         main(
+            mock_ctx,
             config_spec=[str(DEFAULT_CONFIG_FILE)],
             model_name="test-model",
             task="Test task",
@@ -117,8 +128,13 @@ def test_mini_calls_prompt_when_no_task_provided():
         mock_agent.run.return_value = {"exit_status": "Success", "submission": "Result"}
         mock_get_agent.return_value = mock_agent
 
+        # Setup mock context
+        mock_ctx = Mock(spec=typer.Context)
+        mock_ctx.invoked_subcommand = None
+
         # Call main function without task
         main(
+            mock_ctx,
             config_spec=[str(DEFAULT_CONFIG_FILE)],
             model_name="test-model",
             task=None,  # No task provided
@@ -163,8 +179,13 @@ def test_mini_with_explicit_model():
         mock_agent.run.return_value = {"exit_status": "Success", "submission": "Result"}
         mock_get_agent.return_value = mock_agent
 
+        # Setup mock context
+        mock_ctx = Mock(spec=typer.Context)
+        mock_ctx.invoked_subcommand = None
+
         # Call main function with explicit model
         main(
+            mock_ctx,
             config_spec=[str(DEFAULT_CONFIG_FILE)],
             model_name="gpt-4",
             task="Test task with explicit model",
@@ -205,8 +226,13 @@ def test_yolo_mode_sets_correct_agent_config():
         mock_agent.run.return_value = {"exit_status": "Success", "submission": "Result"}
         mock_get_agent.return_value = mock_agent
 
+        # Setup mock context
+        mock_ctx = Mock(spec=typer.Context)
+        mock_ctx.invoked_subcommand = None
+
         # Call main function with yolo=True
         main(
+            mock_ctx,
             config_spec=[str(DEFAULT_CONFIG_FILE)],
             model_name="test-model",
             task="Test yolo task",
@@ -247,8 +273,13 @@ def test_confirm_mode_sets_correct_agent_config():
         mock_agent.run.return_value = {"exit_status": "Success", "submission": "Result"}
         mock_get_agent.return_value = mock_agent
 
+        # Setup mock context
+        mock_ctx = Mock(spec=typer.Context)
+        mock_ctx.invoked_subcommand = None
+
         # Call main function with yolo=False (default)
         main(
+            mock_ctx,
             config_spec=[str(DEFAULT_CONFIG_FILE)],
             model_name="test-model",
             task="Test confirm task",
@@ -441,8 +472,13 @@ def test_exit_immediately_flag_sets_confirm_exit_false():
         mock_agent.run.return_value = {"exit_status": "Success", "submission": "Result"}
         mock_get_agent.return_value = mock_agent
 
+        # Setup mock context
+        mock_ctx = Mock(spec=typer.Context)
+        mock_ctx.invoked_subcommand = None
+
         # Call main function with --exit-immediately flag
         agent = main(
+            mock_ctx,
             config_spec=[str(DEFAULT_CONFIG_FILE)],
             model_name="test-model",
             task="Test task",
@@ -480,8 +516,13 @@ def test_no_exit_immediately_flag_sets_confirm_exit_true():
         mock_agent.run.return_value = {"exit_status": "Success", "submission": "Result"}
         mock_get_agent.return_value = mock_agent
 
+        # Setup mock context
+        mock_ctx = Mock(spec=typer.Context)
+        mock_ctx.invoked_subcommand = None
+
         # Call main function without --exit-immediately flag (defaults to False)
         agent = main(
+            mock_ctx,
             config_spec=[str(DEFAULT_CONFIG_FILE)],
             model_name="test-model",
             task="Test task",
