@@ -1,16 +1,16 @@
-# Gemini CLI Context: mini-swe-agent
+# Gemini CLI Context: mini-swe-agent (GitLab Edition)
 
-This project is `mini-swe-agent`, a minimal and highly performant AI software engineering agent designed to solve GitHub issues. It prioritizes simplicity, using a linear message history and independent shell command execution via `subprocess.run`.
+This project is `mini-swe-agent`, a minimal and highly performant AI software engineering agent. While the core is generic, this specific workspace is configured as a **Minimal GitLab SWE Agent CLI**, purpose-built to autonomously resolve GitLab issues using Docker sandboxing.
 
 ## Project Overview
 
-*   **Purpose:** A lightweight alternative to complex agent scaffolds, achieving high scores on SWE-bench with minimal code.
-*   **Core Philosophy:** "Bash-only" toolset, linear history, and stateless action execution.
-*   **Tech Stack:** Python (>=3.10), LiteLLM (for multi-model support), Pydantic (for configuration), Jinja2 (for templating), and Typer/Rich (for the CLI).
-*   **Architecture:** Follows a strict separation of concerns via three main Protocols defined in `src/minisweagent/__init__.py`:
-    *   **Agent:** Manages the high-level loop (Query -> Act -> Observe).
-    *   **Model:** Handles LLM communication, message formatting, and action parsing.
-    *   **Environment:** Executes shell commands (locally, in Docker, etc.) and handles completion signals.
+*   **Purpose:** Autonomously resolve GitLab issues by cloning repositories into ephemeral Docker sandboxes, generating fixes, and submitting Merge Requests.
+*   **Core Philosophy:** "Bash-only" toolset, linear history, and stateless action execution via independent shell commands.
+*   **Key Technologies:** Python (>=3.10), LiteLLM, Docker (for sandboxing), GitLab API, and Pydantic.
+*   **Architecture:**
+    *   **Agent (`DefaultAgent`):** Manages the Query -> Act -> Observe loop.
+    *   **Model (`LitellmModel`):** Interfaces with LLMs (e.g., Gemini, Claude) via LiteLLM.
+    *   **Environment (`LocalEnvironment` / `DockerEnvironment`):** Executes shell commands and handles the `COMPLETE_TASK_AND_SUBMIT_FINAL_OUTPUT` signal.
 
 ## Building and Running
 
@@ -19,37 +19,37 @@ This project is `mini-swe-agent`, a minimal and highly performant AI software en
 # Install in editable mode with dev dependencies
 pip install -e ".[dev]"
 
-# Install pre-commit hooks
-pre-commit install
+# Configure environment (see .env.example)
+cp .env.example .env
+# Edit .env with your LLM_API_KEY and GITLAB_TOKEN
 ```
 
 ### Key Commands
 *   **Run CLI:** `mini` or `mini-swe-agent` (Entry point: `minisweagent.run.mini:app`)
+*   **Run Utility CLI:** `mini-extra` or `mini-e`
 *   **Run Tests:** `pytest`
 *   **Linting/Formatting:** `ruff check .` and `ruff format .`
-*   **Type Checking:** The project uses Protocols for static type checking; ensure changes adhere to `Agent`, `Model`, and `Environment` definitions.
 
 ## Project Structure
 
-*   `src/minisweagent/`: Core source code.
-    *   `agents/`: Implementation of agent logic (e.g., `DefaultAgent`).
-    *   `environments/`: Execution environments (Local, Docker, Singularity, etc.).
-    *   `models/`: Model wrappers (primarily `LitellmModel`).
+*   `src/minisweagent/`:
+    *   `agents/`: Agent implementations (e.g., `DefaultAgent`).
+    *   `environments/`: Execution environments (Local, Docker, etc.).
+    *   `models/`: Model wrappers and tool-call parsing logic.
     *   `config/`: YAML templates for system prompts and default settings.
-    *   `run/`: CLI entry points and main execution scripts.
-*   `tests/`: Comprehensive test suite mirroring the `src` structure.
-*   `docs/`: MkDocs-based documentation.
+    *   `run/`: CLI entry points.
+*   `tests/`: Extensive test suite for agents, environments, and models.
+*   `PRD.md`: Specific requirements for the GitLab integration.
 
 ## Development Conventions
 
-*   **Configuration:** All components use Pydantic `BaseModel` for configuration. Default settings are stored in YAML files within `src/minisweagent/config/`.
-*   **Completion Signal:** The agent signals task completion by echoing the specific string `COMPLETE_TASK_AND_SUBMIT_FINAL_OUTPUT`.
-*   **Stateless Actions:** Actions are independent. Do not rely on persistent shell state (like `export` or `cd`) across different `step()` calls unless explicitly prefixed in the same command.
-*   **Error Handling:** The `DefaultAgent` catches uncaught exceptions and appends them to the trajectory as an `exit` role message.
+*   **Completion Signal:** The agent signals task completion by echoing `COMPLETE_TASK_AND_SUBMIT_FINAL_OUTPUT`.
+*   **Independent Actions:** Every action is executed in a new subshell. Do not assume persistent state (like `cd` or exports) between steps.
+*   **Configuration:** Components use Pydantic `BaseModel`. Default prompts are in `src/minisweagent/config/default.yaml`.
+*   **GitLab Workflow:** The agent is expected to fetch issue context, create a branch (`swe-agent/issue-[ID]`), commit changes, and open a Merge Request.
 
 ## Usage for Gemini
 
-When assisting with this project:
-1.  **Respect the Minimalist Design:** Avoid adding complex "fancy" dependencies or heavy abstractions.
-2.  **Verify via LocalEnvironment:** Use `src/minisweagent/environments/local.py` logic to understand how commands will be executed by the agent.
-3.  **Template Precision:** System prompts and observation formatting are governed by Jinja2 templates in `src/minisweagent/config/default.yaml`.
+1.  **Respect the Minimalist Design:** Keep the core agent logic simple and "bash-only."
+2.  **Sandbox Safety:** Always assume actions should be safe for a Docker-based environment as defined in the PRD.
+3.  **Template Consistency:** Ensure any new prompts or observation formats align with the Jinja2 templates in `src/minisweagent/config/`.
