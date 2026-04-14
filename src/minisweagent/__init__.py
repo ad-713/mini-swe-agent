@@ -34,6 +34,10 @@ if not os.getenv("MSWEA_SILENT_STARTUP"):
         f"Loading global config from [bold green]'{global_config_file}'[/bold green]",
     )
 dotenv.load_dotenv(dotenv_path=global_config_file)
+# Also load a project-level .env from the current directory, overriding global config values.
+_project_env = Path.cwd() / ".env"
+if _project_env.exists():
+    dotenv.load_dotenv(dotenv_path=_project_env, override=True)
 
 
 # === Protocols ===
