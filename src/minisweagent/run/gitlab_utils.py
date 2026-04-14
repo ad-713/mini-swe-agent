@@ -3,33 +3,39 @@ import re
 from urllib.parse import quote_plus
 import requests
 
-def parse_issue_url(url: str) -> tuple[str, str]:
-    """Parse a GitLab issue URL to extract URL-encoded project path and issue IID."""
-    match = re.search(r"gitlab\.com/(.*?)/-/issues/(\d+)", url)
+def parse_issue_url(url: str) -> tuple[str, str, str]:
+    """Parse a GitLab issue/work_item URL to extract base URL, URL-encoded project path, and IID."""
+    # Pattern to match both /issues/ and /work_items/ and extract parts
+    # Group 1: Protocol and Host (Base URL)
+    # Group 2: Project Path
+    # Group 3: Issue/Work Item IID
+    match = re.search(r"^(https?://[^/]+)/(.*?)/-/(?:issues|work_items)/(\d+)", url)
     if not match:
         raise ValueError(f"Invalid GitLab issue URL: {url}")
-    project_path = match.group(1)
-    return quote_plus(project_path), match.group(2)
+    
+    base_url = match.group(1).rstrip("/")
+    project_path = match.group(2).strip("/")
+    return base_url, quote_plus(project_path), match.group(3)
 
-def fetch_issue_details(project_id: str, issue_iid: str) -> dict:
+def fetch_issue_details(base_url: str, project_id: str, issue_iid: str) -> dict:
     """Fetch issue details from GitLab API."""
     token = os.getenv("GITLAB_TOKEN")
     if not token:
         raise ValueError("GITLAB_TOKEN environment variable is not set")
     
-    url = f"https://gitlab.com/api/v4/projects/{project_id}/issues/{issue_iid}"
+    url = f"{base_url}/api/v4/projects/{project_id}/issues/{issue_iid}"
     headers = {"Authorization": f"Bearer {token}"}
     response = requests.get(url, headers=headers)
     response.raise_for_status()
     return response.json()
 
-def create_merge_request(project_id: str, source_branch: str, issue_iid: str, title: str, description: str) -> str:
+def create_merge_request(base_url: str, project_id: str, source_branch: str, issue_iid: str, title: str, description: str) -> str:
     """Create a Merge Request and return its web URL."""
     token = os.getenv("GITLAB_TOKEN")
     if not token:
         raise ValueError("GITLAB_TOKEN environment variable is not set")
 
-    url = f"https://gitlab.com/api/v4/projects/{project_id}/merge_requests"
+    url = f"{base_url}/api/v4/projects/{project_id}/merge_requests"
     headers = {"Authorization": f"Bearer {token}"}
     payload = {
         "source_branch": source_branch,
