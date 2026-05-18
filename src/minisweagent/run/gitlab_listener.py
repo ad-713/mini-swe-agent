@@ -1,4 +1,5 @@
 import os
+import re
 import subprocess
 import typer
 from minisweagent.run.gitlab_utils import (
@@ -23,6 +24,11 @@ def listen(
     print(f"Checking for mentions of {bot_mention} in project {project_id}...")
     issues = fetch_project_issues(base_url, project_id)
     
+    # Pre-compile mention pattern
+    # Use negative lookbehind/lookahead for word characters to simulate word boundaries
+    # \b doesn't work before @ because @ is not a word character.
+    mention_pattern = rf"(?<!\w){re.escape(bot_mention)}(?!\w)"
+    
     for issue in issues:
         issue_iid = str(issue["iid"])
         issue_url = issue["web_url"]
@@ -30,7 +36,7 @@ def listen(
         
         comments = fetch_issue_comments(base_url, project_id, issue_iid)
         for comment in comments:
-            if bot_mention in comment["body"]:
+            if re.search(mention_pattern, comment["body"]):
                 note_id = comment["id"]
                 
                 # Check if already processed
@@ -48,7 +54,7 @@ def listen(
                     cmd = ["mini", "gitlab", issue_url, "-y"]
                     subprocess.run(cmd, check=True)
                     add_comment_reaction(base_url, project_id, issue_iid, note_id, "white_check_mark")
-                except subprocess.CalledProcessError:
+                except Exception:
                     print(f"Agent failed for issue {issue_url}")
                     add_comment_reaction(base_url, project_id, issue_iid, note_id, "x")
 
